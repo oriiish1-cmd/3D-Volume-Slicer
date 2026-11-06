@@ -41,3 +41,34 @@ def parse_csv_line(line):
     for i in range(0, len(coords), 3):
         points.append(np.array([coords[i], coords[i+1], coords[i+2]]))
     return points
+
+
+def validate_plane(points):
+    """
+    Validates if the points define a valid plane (isosceles triangle/trapezoid).
+    Treats a triangle as a trapezoid where a1 == a2 to prevent code duplication.
+    Returns the unified 4 points (a1, a2, b, c) for the algorithm to use.
+    """
+    if len(points) == 3:
+        a1 = a2 = points[0]
+        b = points[1]
+        c = points[2]
+    elif len(points) == 4:
+        a1, a2, b, c = points
+    else:
+        raise ValueError("Invalid number of points- must be 3 or 4")
+
+    # function included in numpy that calculate distance between 3D points.
+    dist_a1b = np.linalg.norm(a1 - b)
+    dist_a2c = np.linalg.norm(a2 - c)
+
+    # |dist(a1,b) - dist(a2,c)| < EPS
+    if abs(dist_a1b - dist_a2c) >= EPS:
+        raise ValueError(f"Not an isosceles shape (diff: {abs(dist_a1b - dist_a2c):.4f} >= EPS).")
+
+    # dist(a1,a2) <= dist(b,c) - The top base must be less than or equal to the bottom base. Its suitable triangle too.
+    if np.linalg.norm(a1 - a2) > np.linalg.norm(b - c):
+        raise ValueError("Trapezoid base a1-a2 is larger than b-c.")
+
+    return a1, a2, b, c
+
