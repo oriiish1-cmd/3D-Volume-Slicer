@@ -63,16 +63,53 @@ def create_error_frame(width=500, height=500):
 
 def project_plane(volume, points):
     """
-    Core algorithm stub. Projects the 3D volume onto the given plane.
-    Will be fully implemented with vectorization in the next step.
+    Core algorithm: Projects the 3D volume onto the given plane using NumPy vectorization.
+    Achieves high FPS by computing the entire frame grid mathematically in one go.
     """
-    # Validate the points (Throws ValueError if invalid)
-    points = validate_plane(points)
+    # Validate points and get the unified trapezoid vertices
+    a1, a2, b, c = validate_plane(points)
 
-    # Return a temporary gray frame so the video can be built
-    return np.ones((500, 500), dtype=np.uint8) * 128
+    # Calculate optimal frame dimensions based on real physical distances
+    height = int(np.ceil(max(np.linalg.norm(a1 - b), np.linalg.norm(a2 - c))))
+    width = int(np.ceil(max(np.linalg.norm(a1 - a2), np.linalg.norm(b - c))))
 
+    # S= height * width
+    if height == 0 or width == 0:
+        return create_error_frame()
 
+    # Vectorization: Create grids for, interpolation parameters
+    # v represents vertical progression (0 to 1), u represents horizontal progression (0 to 1)
+    v = np.linspace(0, 1, height)[:, np.newaxis, np.newaxis]  # Shape: (height, 1, 1)
+    u = np.linspace(0, 1, width)[np.newaxis, :, np.newaxis]  # Shape: (1, width, 1)
+
+    # Reshape points for NumPy broadcasting- (height , width, 3D: x,y,z)
+    a1_v = np.array(a1).reshape(1, 1, 3) 
+    a2_v = np.array(a2).reshape(1, 1, 3)
+    b_v = np.array(b).reshape(1, 1, 3)
+    c_v = np.array(c).reshape(1, 1, 3)
+
+    # Interpolate the 3D plane coordinates using bilinear interpolation
+    left_edge = a1_v + v * (b_v - a1_v)
+    right_edge = a2_v + v * (c_v - a2_v)
+    grid_3d = left_edge + u * (right_edge - left_edge)
+
+    # Round the theoretical 3D coordinates to integer indices for array fetching
+    coords = np.round(grid_3d).astype(int)
+    x, y, z = coords[:, :, 0], coords[:, :, 1], coords[:, :, 2]
+
+    # Hide out of bounds coordinates to strictly prevent crashes
+    max_x, max_y, max_z = volume.shape
+    valid_mask = (x >= 0) & (x < max_x) & (y >= 0) & (y < max_y) & (z >= 0) & (z < max_z)
+
+    # Initialize a black frame
+    frame = np.zeros((height, width), dtype=np.float32)
+
+    # Pull all valid pixels in one operation
+    frame[valid_mask] = volume[x[valid_mask], y[valid_mask], z[valid_mask]]
+
+    # Normalize to uint8 (0-255) for OpenCV compatibility
+    frame_normalized = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
+    return frame_normalized.astype(np.uint8)
 
 def main():
     # Enforce correct CLI(command line interface) arguments
