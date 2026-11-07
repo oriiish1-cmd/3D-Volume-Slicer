@@ -8,23 +8,6 @@ import cv2  # OpenCV for video generation
 EPS = 0.001
 
 
-def main():
-    # Enforce correct CLI(command line interface) arguments
-    if len(sys.argv) != 4:
-        print("Usage: python Ex0.py <file.nrrd> <file.csv> <file.mp4>")
-        sys.exit(1)
-
-    nrrd_file = sys.argv[1]
-    csv_file = sys.argv[2]
-    mp4_file = sys.argv[3]
-
-    print(f"Initialization complete")
-    print(f"NRRD: {nrrd_file} | CSV: {csv_file} | Output: {mp4_file}")
-
-
-if __name__ == "__main__":
-    main()
-
 
 def load_nrrd(file_path):
     """Loads the NRRD file and returns the 3D matrix and its metadata"""
@@ -46,7 +29,7 @@ def parse_csv_line(line):
 def validate_plane(points):
     """
     Validates if the points define a valid plane (isosceles triangle/trapezoid).
-    Treats a triangle as a trapezoid where a1 == a2 to prevent code duplication.
+    Triangle is like a trapezoid where a1 == a2 to prevent code duplication.
     Returns the unified 4 points (a1, a2, b, c) for the algorithm to use.
     """
     if len(points) == 3:
@@ -72,3 +55,89 @@ def validate_plane(points):
 
     return a1, a2, b, c
 
+
+def create_error_frame(width=500, height=500):
+    """Creates a black frame(matrix of zeros) to handle invalid points or invalid geometric shape"""
+    return np.zeros((height, width), dtype=np.uint8)
+
+
+def project_plane(volume, points):
+    """
+    Core algorithm stub. Projects the 3D volume onto the given plane.
+    Will be fully implemented with vectorization in the next step.
+    """
+    # Validate the points (Throws ValueError if invalid)
+    points = validate_plane(points)
+
+    # Return a temporary gray frame so the video can be built
+    return np.ones((500, 500), dtype=np.uint8) * 128
+
+
+
+def main():
+    # Enforce correct CLI(command line interface) arguments
+    if len(sys.argv) != 4:
+        print("Usage: python Ex0.py <file.nrrd> <file.csv> <file.mp4>")
+        sys.exit(1)
+
+    nrrd_file = sys.argv[1]
+    csv_file = sys.argv[2]
+    mp4_file = sys.argv[3]
+
+    print(f"Initialization complete")
+    print(f"NRRD: {nrrd_file} | CSV: {csv_file} | Output: {mp4_file}")
+
+    try:
+        # Load Volume
+        volume, header = load_nrrd(nrrd_file)
+
+        # Prepare Video Writer parameters
+        fps = 30 ##  The velocity that the video plays
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        video_writer = None
+
+        print(f"Reading planes from: {csv_file}")
+        # Make sure that the csv file will close automatically (Also there will be an error).
+        with open(csv_file, 'r') as f:
+            reader = csv.reader(f)
+
+            # Move every row on the csv and give the num of the current row
+            for row_idx, row in enumerate(reader):
+                if not row:
+                    continue  # Skip empty lines
+
+                try:
+                    points = parse_csv_line(row)
+
+                    # Calculate the projection
+                    frame = project_plane(volume, points)
+                    print(f"Frame {row_idx + 1}: Rendered successfully.")
+
+                except Exception as e:
+                    # Create a black error frame if points are invalid
+                    print(f"Frame {row_idx + 1}: ERROR - {str(e)}. Generating error frame.")
+                    frame = create_error_frame()
+
+                # Initialize video writer based on the first processed frame's dimensions
+                if video_writer is None:
+                    height, width = frame.shape
+                    video_writer = cv2.VideoWriter(mp4_file, fourcc, fps, (width, height), isColor=False)
+
+                # Resize if the next frames have different dimensions (for video stability)
+                if frame.shape != (height, width):
+                    frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_NEAREST)
+
+                video_writer.write(frame)
+
+        # Release resources
+        if video_writer:
+            video_writer.release()
+        print(f"Processing complete. Video saved to {mp4_file}")
+
+    except Exception as e:
+        print(f"Critical System Error: {str(e)}") # Like if the NRRD file does not exist on the computer at all, or if memory has run out
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
