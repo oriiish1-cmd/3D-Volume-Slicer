@@ -17,14 +17,23 @@ def load_nrrd(file_path):
 
 def parse_csv_line(line):
     """
-    Parses a CSV line into a list of 3D points- x1, y1, z1, x2, y2 , z2,...
+    Parses a CSV line into a list of 3D points- num_points, x1, y1, z1, x2, y2, z2, ...
     """
     coords = [float(val) for val in line if val.strip()]
-    points = []
-    for i in range(0, len(coords), 3):
-        points.append(np.array([coords[i], coords[i+1], coords[i+2]]))
-    return points
 
+    # The first is the number of the points
+    num_points = int(coords[0])
+    actual_coords = coords[1:]
+
+    # Make sure the number of points correct to earlier
+    if len(actual_coords) != num_points * 3:
+        raise ValueError(f"Expected {num_points * 3} coordinates, but got {len(actual_coords)}.")
+
+    points = []
+    for i in range(0, len(actual_coords), 3):
+        points.append(np.array([actual_coords[i], actual_coords[i + 1], actual_coords[i + 2]]))
+
+    return points
 
 def validate_plane(points):
     """
