@@ -2,12 +2,6 @@
 
 extracts 2D planar cross sections from 3D volumetric raster data (in NRRD format) and saves the ordered sequence of projections as an MP4 video.
 
-the goal is to takes 3D files cut them to pictures by a plane of  isosceles triangle or  isosceles trapezoid (The plane is determined by 3-4 points) and finally make them into a video.
-this system can help doctors to see in one photo all part of the body they need to diagnose.
-There used to be a system that looked from above, from the side, and from below. But now it could see regard to wherever they need.
-
-
-
 repository: https://github.com/oriiish1-cmd/3D-Volume-Slicer.git
 ### Installation
 Ensure Python 3.10+ is installed ,if not install it.
@@ -24,25 +18,29 @@ python Ex0.py <file.nrrd> <file.csv> <file.mp4>
 <file.nrrd>: input 3D volume file.
 <file.csv>: CSV containing 3 point or 4 point slice plane coordinates each row. it's need to be isosceles.
 <file.mp4>: Output video.
+* The input files are placed in the data folder
+
+## Configuration
+EPS = 0.001
+
+## Tests
+There are 2 csv test files 
+```bash
+python Ex0.py data/<file.nrrd> data/csv/edge_cases.csv edge_test_output.mp4
+python Ex0.py data/<file.nrrd> data/csv/lecturer_example.csv LE_test_output.mp4
+```
 
 ## Project Structure
+ Ex0.py             main script (demo + algorithm)
+ data/              all the data, includes NRRD files
+ data/csv/          data of csv files (demo and test files)
+ data/images/       images
+ docs/SRS.md        requirements
+ docs/EDD.md        algorithm
+ output2            outputfile from thee execution- It is an example
+ tests/test_Ex0.py  test file
 
 ## LICENSE
-p
+this is a open source, you can use it gladdly.
+For contact: ORI. mail: oriiish1@gmail.com
 
-תיאור קצר (What it is): תיאור המוצר והמטרה שלו במשפט אחד
-
-התחלה מהירה (Quick start): הוראות פשוטות להתקנה והרצה ראשונית
-
-דוגמת שימוש (Usage example): דוגמת קוד או פקודה להפעלת המערכת
-
-הגדרות וסביבה (Configuration & Environment): פירוט משתני סביבה ודרישות קונפיגורציה
-
-הרצת בדיקות (How to run tests): ההנחיות והפקודות להרצת הבדיקות
-
-מבנה הפרויקט (Project structure): הסבר על חלוקת התיקיות והקבצים במאגר
-
-תרומה לפרויקט (How to contribute): הנחיות למפתחים המעוניינים לתרום לקוד
-
-רישיון ויצירת קשר (License & Contact): סוג הרישיון (כגון MIT) ופרטי ליצירת קשר
-.
